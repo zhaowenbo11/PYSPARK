@@ -101,6 +101,34 @@
 - sortByKey算子
   - 功能：针对**KV型**RDD，按照KEY进行排序
   - 语法：rdd.sortByKey(ascending=True,numPartitions=None, keyfunc=<function RDD, <lambda> >)
+
+### 4.常用的Action算子
+
+- countByKey算子
+  - 功能：统计key出现的次数，一般适用于KV型RDD
+- collect算子
+  - 功能：将RDD各个分区内的数据，统一收集到Driver中，形成一个List对象
+  - **注意**：RDD是分布式对象，其数据量可以很大，所以用这个算子之前要心知肚明的了解结果数据集不会太大，不然会把Driver内存撑爆
+- reduce算子
+  - 功能：对RDD的数据集按照你传入的逻辑进行聚合
+  - 语法：rdd.reduce(func)
+- fold算子
+  - 功能：和reduce一样，接受传入逻辑进行聚合，聚合是带有初始值的
+  - 这个初始值聚合，会作用在：分区内聚合、分区间聚合
+- first算子
+  - 功能：取出RDD的第一个元素
+- takeSample算子
+  - 功能：随机抽样RDD的数据
+  - 用法：takeSample(参数1：True/False, 参数2：采样数，参数3：随机数种子)
+  - 参数1：True表示允许去同一个数据，False表示不允许取同一个数据，和数据内容无关，是否重复表示的是同一个位置的数据
+  - 参数2：抽样要几个
+  - 参数3：随机数种子，一般参数3我们不传，spark会自动给与随机数种子
+- takeOrdered算子
+  - 功能：对RDD进行排序取前n个
+  - 用法：rdd.takeOrdered(参数1，参数2)
+  - 参数1：要几个数据
+  - 参数2：对排序的数据进行更改（不会更改数据本身，只是在排序的时候换个样子）
+  - 这个方法使用按照元素自然顺序升序排序，如果想要倒序，需要用参数2来对排序的数据进行处理
                                                                                                                                                                                                                                    
 
 ## 三、RDD的重要算子
