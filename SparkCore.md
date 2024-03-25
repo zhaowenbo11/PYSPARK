@@ -129,8 +129,91 @@
   - 参数1：要几个数据
   - 参数2：对排序的数据进行更改（不会更改数据本身，只是在排序的时候换个样子）
   - 这个方法使用按照元素自然顺序升序排序，如果想要倒序，需要用参数2来对排序的数据进行处理
+- foreach算子
+  - 功能：对RDD的每一个元素，执行你提供的逻辑操作（和map一个意思），但是这个方法没有返回值
+  - 用法：rdd.foreach(func)
+  - **注意**：foreach算子是在executer中执行输出，某种程度上性能较高
+- saveAsTextFile算子
+  - 功能：将RDD数据写入文本文件中
+  - **注意**：和foreach算子一样，结果不经过Driver，直接输出
+
+### 5.分区操作算子 —— Transforamtion
+
+- mapPartitions算子
+  - 功能：mapPartitions一次被传递的是一整个分区的数据，作为一个迭代器（一个list）对象传入过来
+- foreachPartition算子
+  - 功能：和普通foreach一致，一次处理的是一整个分区数据，没有返回值
+- partitionBy算子
+  - 功能：对RDD进行自定义分区操作
+  - 用法：rdd.partitionBy(参数1，参数2)
+  - 参数1：重新分区后有几个分区
+  - 参数2：自定义分区规则，函数传入
+  - 一个传入参数进来，类型无所谓，但返回值一定是int类型，将key传给这个参数，自己写逻辑，决定返回一个分区编号，分区编号从0开始，不要超出分区数-1
+- repartition算子
+  - 功能：对RDD的分区执行重新分区（仅数量）
+  - 用法：rdd.repartition(N)
+  - 传入N 决定新的分区数
+  - **注意**：对分区数量的操作，一定要慎重，一般情况下，我们写spark代码 除了要求全局排序设置为1个分区外，多数时候所有API中关于分区相关的代码我们都不太理会
+  - 分区如果增加，会导致shuffle增加
+
+### 6. 面试题：groupByKey和reduceByKey的区别
+- groupByKey仅分组
+- reduceByKey除了有**ByKey**的分组功能外，还有reduce聚合功能，所以是一个分组+聚合一体化的算子
+- reduceByKey的性能是远大于**groupByKey + 聚合逻辑**的
                                                                                                                                                                                                                                    
 
-## 三、RDD的重要算子
-## 四、RDD的缓存和检查点机制
+## 三、RDD的持久化
+
+### 1. RDD的数据是过程数据
+
+- RDD之间进行相互迭代计算，当执行开启后，新RDD的生成，代表老RDD的消失
+- RDD的数据是过程数据，只在处理的过程中存在，一旦处理完成就不见了
+- **这个特性可以最大化的利用资源，老旧RDD没用了就从内存中清理，给后续的计算腾出内存空间**
+
+### 2. RDD的缓存
+
+- 缓存是**分散存储**
+- RDD的缓存技术：spark提供了缓存API，可以让我们通过调用API，将指定的RDD数据保留在**内存或硬盘上**
+    - rdd.cache()  - 缓存到内存中
+    - rdd.persist(StorageLevel.MEMORY_ONLY) - 仅内存缓存
+    - rdd.persist(StorageLevel.MEMORY_ONLY_2) - 仅内存缓存，2个副本
+    - rdd.persist(StorageLevel.DISK_ONLY) - 仅缓存硬盘上
+    - rdd.persist(StorageLevel.MEMORY_AND_DISK) - 先进内存，不够再放硬盘
+    - rdd.unpersist() - 主动清理缓存的API
+
+### 3. RDD的CheckPoint
+
+- CheckPoint技术，也是将RDD的数据保存起来，但是它**仅支持硬盘存储**并且，它被设计认为是安全的，不保留**血缘关系**
+- CheckPoint存储RDD数据，是**集中收集各个分区的数据进行存储**
+- CheckPoint和缓存的对比
+  - CheckPoint不管分区数量多少，风险是一样的，缓存分区越多，风险越高
+  - CheckPoint支持写入HDFS，缓存不行，HDFS是高可靠存储，CheckPoint被认为是安全的
+  - CheckPoint不支持写入内存，缓存可以，缓存如果写内存，性能比CheckPoint好一些
+  - CheckPoint因为设计认为是安全的，所以**不保留血缘关系**，而缓存因为设计上认为不安全，所以保留
+- 代码
+  - 设置CheckPoint的第一件事情，选择CP的保存路径
+  - 如果是local模式，可以支持本地文件系统，如果是在集群允许，千万要用HDFS
+  - sc.setCheckpointDir("hdfs://hadoop01:8020/output/ckp")
+  - 用的时候，直接调用CheckPoint算子即可
+  - rdd.checkpoint()
+
+
+## 四、Spark案例练习
+
+### 1. 搜索引擎日志分析
+数据来源：搜狗实验室提供【用户查询日志（SogouQ)】数据 http://www.sogou.com/labs/resource/q.php
+本实验使用SogouQ.txt文件  文件路径： ../Data/input/SougouQ.txt
+- 业务需求：
+  - 1. 搜索关键词统计 ：字段：查询词；中文分词jieba
+  - 2. 用户搜索点击统计 ：字段：用户ID和查询词 ；分组、统计
+  - 3. 搜索时间段统计 ： 字段： 访问时间 ； 统计、排序
+
+
+
+### 2. 提交到集群运行
+### 3. 网站日志分析
+
+
+
+
 ## 五、Spark执行的基本原理
